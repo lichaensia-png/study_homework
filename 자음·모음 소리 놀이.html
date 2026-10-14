@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>자음·모음 소리 놀이</title>
+<style>
+:root{
+  --bg:#fff8e7;--card:#ffffff;--ink:#3a2e1f;--c1:#ff8a65;--c2:#4fc3f7;--c3:#81c784;--slot:#ffe0b2;--line:#f0d9a8;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#1f1a12;--card:#2c251a;--ink:#fdf3dc;--slot:#4a3c22;--line:#5a4a2a}
+}
+:root[data-theme="dark"]{--bg:#1f1a12;--card:#2c251a;--ink:#fdf3dc;--slot:#4a3c22;--line:#5a4a2a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-align:center;padding:12px}
+h1{font-size:1.4rem;margin:6px 0 10px}
+.stage{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+.slot{width:70px;height:70px;border-radius:18px;background:var(--slot);border:3px dashed var(--line);font-size:2.4rem;display:flex;align-items:center;justify-content:center;font-weight:700}
+.slot.on{border-style:solid}
+.plus{font-size:1.6rem;font-weight:700}
+.result{font-size:6rem;font-weight:800;min-height:7.5rem;line-height:1.2;color:var(--c1)}
+.row-title{font-weight:700;margin:12px 0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:8px;max-width:640px;margin:0 auto}
+.key{font-size:1.8rem;font-weight:700;padding:12px 0;border:0;border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 3px 0 var(--line);cursor:pointer;touch-action:manipulation}
+.key:active{transform:translateY(2px)}
+.key.c{border-bottom:5px solid var(--c1)}.key.v{border-bottom:5px solid var(--c2)}.key.f{border-bottom:5px solid var(--c3)}
+.ctrl{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.btn{font-size:1.1rem;padding:12px 18px;border:0;border-radius:24px;background:var(--c2);color:#fff;font-weight:700;cursor:pointer}
+.btn.alt{background:var(--c1)}
+label.tog{display:inline-flex;align-items:center;gap:8px;font-size:1.1rem;font-weight:700;background:var(--card);padding:10px 16px;border-radius:24px;box-shadow:0 3px 0 var(--line)}
+label.tog input{width:22px;height:22px}
+#note{font-size:.9rem;opacity:.75;min-height:1.2em}
+.word{font-size:2.2rem;font-weight:700;min-height:3rem}
+</style>
+</head>
+<body>
+<h1>🔤 자음·모음 소리 놀이</h1>
+<div class="stage">
+  <div class="slot" id="s1">?</div><div class="plus">+</div>
+  <div class="slot" id="s2">?</div>
+  <div class="plus fin" hidden>+</div><div class="slot fin" id="s3" hidden>?</div>
+</div>
+<div class="result" id="res"></div>
+<div class="word" id="word"></div>
+<div class="ctrl">
+  <button class="btn" id="again">🔊 다시 듣기</button>
+  <button class="btn alt" id="clear">🧹 지우기</button>
+  <label class="tog"><input type="checkbox" id="fintog"> 받침 넣기</label>
+</div>
+<div id="note"></div>
+
+<div class="row-title" id="ctitle">자음</div>
+<div class="grid" id="cons"></div>
+<div class="row-title">모음</div>
+<div class="grid" id="vows"></div>
+<div class="row-title">소리 설정</div>
+<div class="ctrl">
+  <label class="tog">🗣️ <select id="voice"></select></label>
+  <label class="tog">속도 <select id="rate"><option value="0.8">보통</option><option value="0.6" selected>느리게</option><option value="0.45">아주 느리게</option></select></label>
+</div>
+
+<script>
+var CONS=["ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+var VOWS=["ㅏ","ㅑ","ㅓ","ㅕ","ㅗ","ㅛ","ㅜ","ㅠ","ㅡ","ㅣ"];
+var INI=["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+var MED=["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
+var FIN=["","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+var st={c:null,v:null,f:null};
+var $=function(id){return document.getElementById(id)};
+
+function build(id,list,cls,key){
+  var g=$(id);
+  list.forEach(function(ch){
+    var b=document.createElement("button");
+    b.className="key "+cls;b.textContent=ch;
+    b.onclick=function(){pick(key,ch)};
+    g.appendChild(b);
+  });
+}
+build("cons",CONS,"c","c");
+build("vows",VOWS,"v","v");
+
+function syllable(){
+  if(!st.c||!st.v)return "";
+  var f=$("fintog").checked&&st.f?FIN.indexOf(st.f):0;
+  return String.fromCharCode(0xAC00+(INI.indexOf(st.c)*21+MED.indexOf(st.v))*28+f);
+}
+function speak(t){
+  if(!t)return;
+  if(!("speechSynthesis" in window)){$("note").textContent="이 기기에서는 소리 읽기를 지원하지 않아요.";return}
+  try{
+    speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(t);
+    u.lang="ko-KR";u.rate=parseFloat($("rate").value);u.pitch=1;
+    var sel=$("voice").value,all=speechSynthesis.getVoices();
+    for(var i=0;i<all.length;i++){if(all[i].voiceURI===sel){u.voice=all[i];break}}
+    speechSynthesis.speak(u);
+  }catch(e){$("note").textContent="소리를 낼 수 없어요."}
+}
+function update(play){
+  var useFin=$("fintog").checked;
+  [["s1","c"],["s2","v"],["s3","f"]].forEach(function(p){
+    var el=$(p[0]);el.textContent=st[p[1]]||"?";el.classList.toggle("on",!!st[p[1]]);
+  });
+  var s=syllable();
+  var w=wordInfo();
+  $("res").textContent=s;
+  $("word").textContent=w?w[0]+" "+w[1]:"";
+  if(play&&s)speak(say(s));
+}
+$("again").onclick=function(){speak(say(syllable()))};
+$("clear").onclick=function(){st={c:null,v:null,f:null};$("note").textContent="";update(false)};
+$("fintog").onchange=function(){
+  var on=this.checked;
+  document.querySelectorAll(".fin").forEach(function(e){e.hidden=!on});
+  if(!on)st.f=null;
+  $("note").textContent=on?"자음 → 모음 → 받침 자음 순서로 눌러요":"";
+  update(false);
+};
+var WORDS={"ㄱㅏ":["🎒","가방"],"ㄱㅓ":["🕷️","거미"],"ㄱㅕ":["❄️","겨울"],"ㄱㅗ":["🐱","고양이"],"ㄱㅜ":["☁️","구름"],"ㄱㅡ":["🖼️","그림"],"ㄱㅣ":["🚂","기차"],
+"ㄴㅏ":["🦋","나비"],"ㄴㅓ":["🦝","너구리"],"ㄴㅗ":["🎵","노래"],
+"ㄷㅏ":["🌉","다리"],"ㄷㅗ":["🍩","도넛"],"ㄷㅜ":["🦢","두루미"],"ㄷㅡ":["🥁","드럼"],
+"ㄹㅏ":["🍜","라면"],"ㄹㅗ":["🤖","로봇"],"ㄹㅣ":["🎀","리본"],
+"ㅁㅏ":["😷","마스크"],"ㅁㅗ":["👒","모자"],"ㅁㅜ":["🌈","무지개"],"ㅁㅣ":["😊","미소"],
+"ㅂㅏ":["🍌","바나나"],"ㅂㅓ":["🚌","버스"],"ㅂㅗ":["🌕","보름달"],"ㅂㅜ":["🦉","부엉이"],"ㅂㅣ":["✈️","비행기"],
+"ㅅㅏ":["🍎","사과"],"ㅅㅗ":["🚒","소방차"],"ㅅㅜ":["🍉","수박"],"ㅅㅡ":["⛸️","스케이트"],"ㅅㅣ":["⏰","시계"],
+"ㅇㅏ":["👶","아기"],"ㅇㅑ":["⚾","야구"],"ㅇㅓ":["🍢","어묵"],"ㅇㅕ":["🦊","여우"],"ㅇㅗ":["🦆","오리"],"ㅇㅛ":["⛵","요트"],"ㅇㅜ":["🥛","우유"],"ㅇㅠ":["🍼","유모차"],"ㅇㅣ":["🛏️","이불"],
+"ㅈㅏ":["🚗","자동차"],"ㅈㅓ":["🐷","저금통"],"ㅈㅗ":["🐚","조개"],"ㅈㅜ":["🎲","주사위"],"ㅈㅣ":["🌏","지구"],
+"ㅊㅗ":["🍫","초콜릿"],"ㅊㅜ":["🎑","추석"],"ㅊㅣ":["🪥","치약"],
+"ㅋㅏ":["📷","카메라"],"ㅋㅓ":["🪟","커튼"],"ㅋㅗ":["🐘","코끼리"],"ㅋㅜ":["🍪","쿠키"],"ㅋㅡ":["🖍️","크레파스"],"ㅋㅣ":["🥝","키위"],
+"ㅌㅏ":["🦤","타조"],"ㅌㅓ":["🚇","터널"],"ㅌㅗ":["🐰","토끼"],"ㅌㅡ":["🚚","트럭"],"ㅌㅣ":["👕","티셔츠"],
+"ㅍㅏ":["🌊","파도"],"ㅍㅓ":["🧩","퍼즐"],"ㅍㅗ":["🍇","포도"],"ㅍㅜ":["🍮","푸딩"],"ㅍㅣ":["🍕","피자"],
+"ㅎㅏ":["🦛","하마"],"ㅎㅓ":["🌾","허수아비"],"ㅎㅗ":["🐯","호랑이"]};
+function wordInfo(){
+  if(!st.c||!st.v)return null;
+  if($("fintog").checked&&st.f)return null;
+  return WORDS[st.c+st.v]||null;
+}
+function say(s){var w=wordInfo();return w?s+", "+w[1]:s}
+function pick(key,ch){
+  var fin=$("fintog").checked;
+  if(key==="v"){st.v=ch}
+  else if(!fin){st.c=ch}
+  else if(st.c&&st.v&&!st.f){st.f=ch}
+  else if(st.f){st.c=ch;st.v=null;st.f=null}
+  else{st.c=ch}
+  update(true);
+}
+function vscore(v){var n=v.name.toLowerCase(),s=0;if(/google|yuna|neural|natural|premium|enhanced|sunhi|injoon/.test(n))s+=2;if(/compact/.test(n))s-=2;if(!v.localService)s+=1;return s}
+function loadVoices(){
+  var sel=$("voice"),prev=sel.value;
+  var vs=speechSynthesis.getVoices().filter(function(v){return v.lang&&v.lang.replace("_","-").toLowerCase().indexOf("ko")===0});
+  vs.sort(function(a,b){return vscore(b)-vscore(a)});
+  sel.innerHTML="";
+  vs.forEach(function(v){var o=document.createElement("option");o.value=v.voiceURI;o.textContent=v.name;sel.appendChild(o)});
+  if(!vs.length){var o=document.createElement("option");o.value="";o.textContent="기본 음성";sel.appendChild(o)}
+  else if(prev&&[].some.call(sel.options,function(o){return o.value===prev}))sel.value=prev;
+}
+$("voice").onchange=function(){speak(syllable()||"가")};
+$("rate").onchange=function(){speak(syllable()||"가")};
+if("speechSynthesis" in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+</script>
+</body>
+</html>
