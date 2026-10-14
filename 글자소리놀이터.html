@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>글자 소리 놀이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff4d6;--sun:#ffd23f;--coral:#ff7a6b;--sky:#6bb8ff;--leaf:#3dbe8b;--ink:#23395b;--card:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);display:flex;flex-direction:column;align-items:center;overflow-x:hidden;user-select:none}
+header{width:100%;max-width:640px;display:flex;justify-content:space-between;align-items:center;padding:10px 16px}
+h1{margin:0;font-size:1.5rem}
+button{font-family:inherit;color:var(--ink);cursor:pointer}
+.tog{background:var(--card);border:3px solid var(--ink);border-radius:999px;padding:5px 14px;font-size:1.05rem;box-shadow:0 3px 0 var(--ink)}
+.tog.on{background:var(--leaf)}
+main{width:100%;max-width:640px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px 16px}
+.slots{display:flex;align-items:center;gap:8px;font-size:1.6rem}
+.slot{width:62px;height:62px;border:4px dashed var(--ink);border-radius:16px;background:var(--card);display:grid;place-items:center;font-size:2rem;padding:0}
+.slot.active{border-style:solid;background:var(--sun)}
+.slot.c{color:#d6402f}.slot.v{color:#1f6fd1}
+.big{width:190px;height:170px;background:var(--card);border:4px solid var(--ink);border-radius:30px;box-shadow:0 6px 0 var(--ink);display:grid;place-items:center;font-size:7.5rem;line-height:1}
+.big.pop{animation:pop .45s}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+.msg{min-height:1.5rem;font-size:1.15rem;color:var(--coral);text-align:center}
+.label{align-self:flex-start;font-size:1.1rem}
+.grid{display:grid;gap:10px;width:100%}
+.grid.c{grid-template-columns:repeat(5,1fr)}.grid.v{grid-template-columns:repeat(5,1fr)}
+.card{height:58px;font-size:2rem;border:4px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 var(--ink);transition:transform .08s}
+.card:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.card.c{background:#ffd3cc}.card.v{background:#cfe6ff}
+.card.sel{outline:5px solid var(--sun)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.act{background:var(--card);border:4px solid var(--ink);border-radius:999px;padding:7px 18px;font-size:1.15rem;box-shadow:0 4px 0 var(--ink)}
+.act.go{background:var(--leaf)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header><h1>글자 소리 놀이터</h1><button class="tog" id="tog" aria-pressed="false">받침 놀이 끔</button></header>
+<main>
+  <div class="slots" id="slots"></div>
+  <div class="big" id="big">?</div>
+  <div class="msg" id="msg">자음과 모음을 눌러 보세요!</div>
+  <div class="label">자음</div><div class="grid c" id="gc"></div>
+  <div class="label">모음</div><div class="grid v" id="gv"></div>
+  <div class="bar">
+    <button class="act" id="hear">🔊 다시 듣기</button>
+    <button class="act go" id="row">🎵 한 줄 듣기</button>
+    <button class="act" id="clr">🧹 지우기</button>
+  </div>
+</main>
+<script>
+const CHO='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'.split('');
+const JUNG='ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ'.split('');
+const JONG=['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const CONS='ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ'.split('');
+const VOWS='ㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣ'.split('');
+const $=id=>document.getElementById(id);
+let o='',v='',c='',active='o',batchim=false,token=0;
+const compose=(a,b,d)=>String.fromCharCode(0xAC00+(CHO.indexOf(a)*21+JUNG.indexOf(b))*28+JONG.indexOf(d||''));
+function say(t){if(!('speechSynthesis' in window)){$('msg').textContent='이 기기에서는 소리가 나오지 않아요';return}
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=.7;u.pitch=1.2;speechSynthesis.speak(u)}catch(e){}}
+function cur(){return o&&v?compose(o,v,batchim?c:''):''}
+function render(pop){
+  const s=$('slots');s.innerHTML='';
+  const defs=[['o',o||'자음','c'],['v',v||'모음','v']];if(batchim)defs.push(['c',c||'받침','c']);
+  defs.forEach(([k,t,cls],i)=>{if(i)s.appendChild(document.createTextNode('+'));
+    const b=document.createElement('button');b.className='slot '+cls+(active===k?' active':'');b.textContent=t;
+    if(t==='자음'||t==='모음'||t==='받침'){b.style.fontSize='1.1rem';b.style.color='#888'}
+    b.onclick=()=>{active=k;render()};s.appendChild(b)});
+  const t=cur();$('big').textContent=t||(o||v||'?');
+  if(pop){$('big').classList.remove('pop');void $('big').offsetWidth;$('big').classList.add('pop')}
+  document.querySelectorAll('.card').forEach(e=>e.classList.toggle('sel',e.textContent===o&&e.classList.contains('c')&&active!=='c'||e.textContent===v&&e.classList.contains('v')||e.textContent===c&&e.classList.contains('c')&&batchim&&active==='c'));
+}
+function afterChange(){const t=cur();$('msg').textContent=t?'"'+t+'" 소리를 들어 보세요!':'';render(true);if(t)say(t)}
+function tapC(j){token++;
+  if(batchim&&active==='c'){c=j;active='o'}else{o=j;active='v'}
+  afterChange()}
+function tapV(j){token++;v=j;active=batchim?'c':'o';afterChange()}
+VOWS.forEach(j=>{const b=document.createElement('button');b.className='card v';b.textContent=j;b.onclick=()=>tapV(j);$('gv').appendChild(b)});
+CONS.forEach(j=>{const b=document.createElement('button');b.className='card c';b.textContent=j;b.onclick=()=>tapC(j);$('gc').appendChild(b)});
+$('tog').onclick=()=>{batchim=!batchim;c='';active='o';$('tog').classList.toggle('on',batchim);$('tog').setAttribute('aria-pressed',batchim);$('tog').textContent=batchim?'받침 놀이 켬':'받침 놀이 끔';$('msg').textContent=batchim?'받침 칸이 생겼어요! 칸을 눌러서 골라요.':'';render();};
+$('hear').onclick=()=>{const t=cur();t?say(t):($('msg').textContent='자음과 모음을 먼저 골라 주세요')};
+$('clr').onclick=()=>{token++;o=v=c='';active='o';$('msg').textContent='자음과 모음을 눌러 보세요!';render();try{speechSynthesis.cancel()}catch(e){}};
+$('row').onclick=()=>{
+  if(!o){$('msg').textContent='먼저 자음을 골라 주세요';return}
+  const my=++token;VOWS.forEach((vw,i)=>setTimeout(()=>{if(my!==token)return;v=vw;active='o';const t=cur();$('msg').textContent='"'+t+'"';render(true);say(t)},i*1100));
+};
+render();
+</script>
+</body>
+</html>
